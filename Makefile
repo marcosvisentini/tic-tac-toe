@@ -4,7 +4,7 @@ CFLAGS = -g -O0 -std=gnu17 -Wall -Wextra -Werror -Wshadow
 
 LDFLAGS = -lm
 
-SOURCES = main.c board.c gameplay.c checks.c
+SOURCES = main.c
 
 OBJECTS = $(SOURCES:.c=.o)
 
