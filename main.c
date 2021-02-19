@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdbool.h>
 #include <time.h>
 
@@ -11,8 +12,6 @@ typedef struct {
     char piece;
     int number_of_moves;
 } player;
-
-int chosen_game_mode = 0;
 
 void initialize_board(char board[BOARD_SIZE][BOARD_SIZE])
 {
@@ -28,8 +27,7 @@ void press_enter(void)
     printf("\n[PRESS ENTER TO CONTINUE]\n");
 
     while (true) {
-        int c;
-        c = getchar();
+        char c = getchar();
         if (c == '\n') {
             break;
         }
@@ -38,7 +36,7 @@ void press_enter(void)
 
 void clear_stream(void)
 {
-    int c;
+    char c;
 
     while (((c = getchar()) != '\n') && (c != EOF)) {
         continue;
@@ -57,32 +55,6 @@ void sleep_ms(int milliseconds)
     #else
         usleep(milliseconds * 1000);
     #endif
-}
-
-void print_players_info(player players[NUMBER_OF_PLAYERS])
-{
-    if (chosen_game_mode == 1) {
-        printf("Player 1, you are %c[%d;%dm %c %c[0m\n", 27, 30, 41, players[0].piece, 27);
-        printf("Player 2, you are %c[%d;%dm %c %c[0m\n\n", 27, 30, 44, players[1].piece, 27);
-    } else {
-        printf("Human, you are   %c[%d;%dm %c %c[0m\n", 27, 30, 41, players[0].piece, 27);
-        printf("Computer is      %c[%d;%dm %c %c[0m\n\n", 27, 30, 44, players[1].piece, 27);
-    }
-}
-
-void initial_settings(player players[NUMBER_OF_PLAYERS])
-{
-    players[0].id = 1;
-    players[0].piece = 'X';
-    players[0].number_of_moves = 0;
-
-    players[1].id = 2;
-    players[1].piece = 'O';
-    players[1].number_of_moves = 0;
-
-    print_players_info(players);
-    clear_stream();
-    press_enter();
 }
 
 int set_background_color(char cell)
@@ -128,6 +100,42 @@ void print_board(char board[BOARD_SIZE][BOARD_SIZE])
         printf("\n\t+---+---+---+\n");
     }
     printf("\n");
+}
+
+void print_players_info(int chosen_game_mode, 
+                        player players[NUMBER_OF_PLAYERS])
+{
+    if (chosen_game_mode == 1) {
+        printf("Player 1, you are ");
+        print_cell(players[0].piece);
+        printf("\n");
+        printf("Player 2, you are ");
+        print_cell(players[1].piece);
+        printf("\n\n");
+    } else {
+        printf("Human, you are   ");
+        print_cell(players[0].piece);
+        printf("\n");
+        printf("Computer is      ");
+        print_cell(players[1].piece);
+        printf("\n\n");
+    }
+}
+
+void initial_settings(int chosen_game_mode,
+                      player players[NUMBER_OF_PLAYERS])
+{
+    players[0].id = 1;
+    players[0].piece = 'X';
+    players[0].number_of_moves = 0;
+
+    players[1].id = 2;
+    players[1].piece = 'O';
+    players[1].number_of_moves = 0;
+
+    print_players_info(chosen_game_mode, players);
+    clear_stream();
+    press_enter();
 }
 
 bool check_row(char piece, char board[BOARD_SIZE][BOARD_SIZE])
@@ -220,7 +228,8 @@ void tie_message()
     printf("\nIt's a drawn! :'(\n");
 }
 
-void win_message(int player_id, char piece, int number_of_moves)
+void win_message(int chosen_game_mode, int player_id,
+                 char piece, int number_of_moves)
 {
     if (chosen_game_mode == 1) {
         printf("\n\nPlayer %d [", player_id);
@@ -236,10 +245,11 @@ void win_message(int player_id, char piece, int number_of_moves)
     printf("] won with %d moves! \\o/\n", number_of_moves);
 }
 
-bool exit_condition(char piece, int number_of_moves, int player_index, char board[BOARD_SIZE][BOARD_SIZE])
+bool exit_condition(int chosen_game_mode, char piece, int number_of_moves,
+                    int player_index, char board[BOARD_SIZE][BOARD_SIZE])
 {
     if (check_winner(piece, board)) {
-        win_message(player_index + 1, piece, number_of_moves);
+        win_message(chosen_game_mode, player_index + 1, piece, number_of_moves);
         print_board(board);
         return true;
     }
@@ -289,7 +299,7 @@ void greeting(void)
     print_board(board);
 }
 
-void player_message(int player_id, char piece)
+void player_message(int chosen_game_mode, int player_id, char piece)
 {
     if (chosen_game_mode == 1) {
         printf("\nPlayer %d, you are ", player_id);
@@ -349,9 +359,11 @@ void computer_move(char piece, char board[BOARD_SIZE][BOARD_SIZE])
     }
 }
 
-int who_plays_first(void)
+int who_plays_first(int chosen_game_mode)
 {
     int first_player_index = (int)(random() % 2);
+
+    sleep_ms((random() % (2000 - 1000 + 1)) + 1000);
 
     if (chosen_game_mode == 1) {
         printf("\nPlayer %d plays first! \\o/\n", first_player_index + 1);
@@ -366,18 +378,18 @@ int who_plays_first(void)
     return first_player_index;
 }
 
-void gameplay(player players[NUMBER_OF_PLAYERS], char board[BOARD_SIZE][BOARD_SIZE])
+void gameplay(int chosen_game_mode, player players[NUMBER_OF_PLAYERS],
+              char board[BOARD_SIZE][BOARD_SIZE])
 {
-    int player_index = who_plays_first();
+    int player_index = who_plays_first(chosen_game_mode);
     char piece = players[player_index].piece;
 
     print_board(board);
 
     while (true) {
-        player_message(player_index + 1, piece);
+        player_message(chosen_game_mode, player_index + 1, piece);
 
         if (chosen_game_mode == 1) {
-            print_board(board);
             player_move(piece, board);
         } else {
             if (player_index == 0) {
@@ -392,7 +404,8 @@ void gameplay(player players[NUMBER_OF_PLAYERS], char board[BOARD_SIZE][BOARD_SI
 
         int number_of_moves = ++players[player_index].number_of_moves;
 
-        if (exit_condition(piece, number_of_moves, player_index, board)) {
+        if (exit_condition(chosen_game_mode, piece, number_of_moves,
+                           player_index, board)) {
             return;
         }
 
@@ -401,11 +414,13 @@ void gameplay(player players[NUMBER_OF_PLAYERS], char board[BOARD_SIZE][BOARD_SI
     }
 }
 
-void game_mode(void)
+int game_mode(void)
 {
     printf("\n\nHey folks, let's play Tick Tack Toe \\o/\n\n");
 
     while (true) {
+        int chosen_game_mode;
+
         printf("\nChoose a game mode:\n");
         printf("\n1. PLAYER 1  vs  PLAYER 2");
         printf("\n2. HUMAN     vs  COMPUTER\n\n");
@@ -417,7 +432,7 @@ void game_mode(void)
         }
  
         greeting();
-        break;
+        return chosen_game_mode;
     }
 }
 
@@ -429,10 +444,10 @@ int main(void)
         char board[BOARD_SIZE][BOARD_SIZE];
         player players[NUMBER_OF_PLAYERS];
 
-        game_mode();
-        initial_settings(players);
+        int chosen_game_mode = game_mode();
+        initial_settings(chosen_game_mode, players);
         initialize_board(board);
-        gameplay(players, board);
+        gameplay(chosen_game_mode, players, board);
     } while (play_again());
 
     return 0;
